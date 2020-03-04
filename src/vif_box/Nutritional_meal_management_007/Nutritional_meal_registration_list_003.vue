@@ -1,0 +1,304 @@
+<template>
+	<!-- 营养餐报名列表 -->
+	<div style="width:100%;">
+	   <el-card v-loading="loading" class="box-card"  style="padding:0;margin:20px;padding-bottom: 20px;">
+		<div style="width:100%;margin-bottom:10px;float: left;">
+           
+			<el-select class='tab_c'  @change='lx_cl' style='width:150px;' v-model="lx_val" clearable placeholder="用餐类型">
+			   <el-option :label="'月度用餐'" :value="'月度用餐'"></el-option>
+			   <el-option :label="'学期用餐'" :value="'学期用餐'"></el-option>
+			</el-select>
+			
+			<el-date-picker class='tab_c' style='width:150px;' @change='git_act(1)'  value-format='yyyy-MM' v-model="date_val" type="month"  placeholder="用餐月份"> </el-date-picker>
+   
+			<el-select class='tab_c' @change='nian_cl' style='width:100px;' v-model="nian_val" clearable placeholder="年级">
+			   <el-option v-for="(item,index) in nian_box" :key="index" :label="item" :value="index"></el-option>
+			</el-select>
+			
+			<el-select class='tab_c' v-model="cs_val" style='width:110px;' placeholder="城市">
+			   <el-option v-for="(item,index) in cs_box" :key="index" :label="item.city_name" :value="item.city_id"></el-option>
+			</el-select>
+			<el-select class='tab_c' @change='qy_click' style='width:110px;' v-model="qy_val" clearable placeholder="区域">
+			   <el-option v-for="(item,index) in qy_box" :key="index" :label="item.region_name" :value="item.region_id"></el-option>
+			</el-select>
+			<el-select class='tab_c' @change='jd_click' style='width:110px;' v-model="jd_val" clearable placeholder="街道">
+			   <el-option v-for="(item,index) in jd_box" :key="index" :label="item.street_name" :value="item.street_id"></el-option>
+			</el-select>
+			
+			<div class='inp_a' style='width:150px;'><el-input placeholder="请输入学生名字" v-model="masg_val" clearable></el-input></div>
+            <el-button @click='git_act(1)' class='tab_c' type="primary">搜索</el-button>
+			
+			<!-- <el-button style='float:right;' type="primary">导出excel</el-button> -->
+		</div>
+		
+   <div style="width:100%;float: left;">
+	<el-table ref="multipleTable" :data="tableData3" tooltip-effect="dark" style="width: 100%">
+       
+	   <el-table-column prop="school.name" class='tds' align='center' header-align='center'  label="学校" show-overflow-tooltip></el-table-column>
+	   <el-table-column prop="school.city_name" align='center' header-align='center' label="城市" ></el-table-column>
+       <el-table-column prop="school.region_name" class='tds' align='center' header-align='center'  label="区域" ></el-table-column>
+       <el-table-column prop="school.street_name" align='center' header-align='center' label="街道" ></el-table-column>
+	   <el-table-column prop="classes.course_name" align='center' header-align='center' label="用餐月份" >
+		    <template slot-scope="scope">{{scope.row.year}}/{{scope.row.month_format}}</template>
+	   </el-table-column>
+	   <el-table-column prop="start_format" align='center' header-align='center' label="用餐开始日期" show-overflow-tooltip></el-table-column>
+	   <el-table-column prop="end_format" class='tds' align='center' header-align='center'  label="用餐结束日期" show-overflow-tooltip></el-table-column>
+	   
+	   <el-table-column prop="order_period" align='center' header-align='center' label="用餐类型" show-overflow-tooltip>
+		     <template slot-scope="scope">{{scope.row.order_period==1?'月度用餐':'学期用餐'}}</template>
+	   </el-table-column>
+	   
+	   <el-table-column prop="days_total" class='tds' align='center' header-align='center'  label="用餐天数" show-overflow-tooltip></el-table-column>
+	   <el-table-column prop="sku.sku_name" align='center' header-align='center' label="标题" show-overflow-tooltip></el-table-column>
+	   <el-table-column prop="sku.supplier_name" align='center' header-align='center' label="供应商" show-overflow-tooltip></el-table-column>
+	   <el-table-column prop="student_name" class='tds' align='center' header-align='center'  label="学生姓名" show-overflow-tooltip></el-table-column>
+	   <el-table-column prop="" align='center' header-align='center' label="年级班级" show-overflow-tooltip>
+		  <template slot-scope="scope">
+		  			{{scope.row.grade}}年{{scope.row.class}}班
+		  </template>
+	   </el-table-column>
+	   
+     </el-table>
+  <div style="margin-top:20px;">
+<!-- 分页插件 :current-page="currentPage4" -->
+	<div style="float:right;margin-right:10px;">
+       <el-pagination background @size-change="handleSizeChange"
+       @current-change="handleCurrentChange"
+       :page-sizes="ye_s"
+       :page-size="100"
+       layout="total, sizes, prev, pager, next, jumper"
+       :total="total_01">
+       </el-pagination>
+	  </div>
+     </div>
+  </div>
+  
+  </el-card>
+</div>
+</template>
+
+<script>
+	import store from "../../vuex/store.js";
+     export default {
+	  data(){
+	    return {
+			nian_box:['1年级','2年级','3年级','4年级','5年级','6年级','7年级','8年级','9年级'],
+			nian_id:'',
+			nian_val:'',
+			
+		   input_val:'',
+			
+		   date_val:'',//月份
+			
+		   total_01:0,//分页-总条数
+		   ye_s:[15],
+		   
+		   lx_box:[],
+		   lx_id:'',//类型id
+		   lx_val:'',
+		   
+		   masg_val:'',//搜索输入框数据
+		   
+		   tableData3:[],//列表数据
+		   
+           multipleSelection: [],
+		   
+		   // 城市区域街道
+		   cs_box:[],
+		   qy_box:[],
+		   jd_box:[],
+		   
+		   cs_val:'',
+		   qy_val:'',
+		   jd_val:'',
+		   
+		   cs_id:'',
+		   qy_id:'',
+		   jd_id:'',
+		   loading:true,
+		   
+		   region_box:[],
+	    }
+	  },
+		
+	methods:{
+		//年级被点击		
+				nian_cl(i){
+					this.nian_id = i+1;
+					this.git_act(1)
+				},
+		
+		//城市区域街道函数
+						cs_fn(){//城市数据
+						   this.$axios({method:'get',url:store.state.url_data+'/api/regions',params:{type:'city',id:440},headers:{'Authorization':'Bearer '+localStorage.token}}
+						      ).then(res=>{
+						        if(res.data.code==200){
+								 let crs_box = store.state.crs_box;
+								 // let crs_box = this.crs_boxs;
+								 this.cs_box = [];
+								 for(var j in crs_box){
+									  for (var i in res.data.data) {
+									 	if(crs_box[j].city_id==res.data.data[i].city_id){
+									 		this.cs_box.push(res.data.data[i]);
+									 	  }
+									  }; 
+								 }
+								 this.cs_val = this.cs_box[0].city_name;
+								 this.cs_id = this.cs_box[0].city_id;
+								 this.qy_fn();//获取区域数据
+						   		}
+						      }).catch(error=> {});
+						},
+						
+						
+						//获取区域数据
+						qy_fn(){
+						   this.$axios({method:'get',url:store.state.url_data+'/api/regions',params:{type:'region',id:this.cs_id},headers:{'Authorization':'Bearer '+localStorage.token}}
+						      ).then(res=>{
+								console.log(res.data,'区域数据')
+						        if(res.data.code==200){
+									let crs_box = store.state.crs_box;
+									// let crs_box = this.crs_boxs;
+									console.log(res.data.data,'111111111111111111111111111111')
+									if(crs_box[0].region==-1){
+										this.qy_box = res.data.data;
+										this.region_box = [];
+									}else{
+									   for(var j in crs_box){
+										  if(this.cs_id==crs_box[j].city_id){
+											this.region_box = crs_box[j].region;
+										  }
+									   }
+									   this.qy_box = [];
+									   for(var j in this.region_box){
+										  for (var i in res.data.data){
+											if(this.region_box[j].region_id==res.data.data[i].region_id){
+												this.qy_box.push(res.data.data[i]);
+												console.log(2222)
+												
+											}
+										  }
+									   }
+									}
+									this.qy_val = this.qy_box[0].region_name;
+									this.qy_id = this.qy_box[0].region_id; 
+									this.git_act(1)
+									this.jd_fn();//获取街道数据
+						   		}
+						      }).catch(error=> {});
+						},
+						
+						//当区域选项被点击
+						qy_click(i){
+							this.qy_id = i;
+							this.jd_val = '';
+							this.jd_box = [];
+							this.jd_id = '';
+							this.jd_fn();//获取街道数据
+							this.git_act(1)
+						},
+						//获取街道数据
+						jd_fn(){
+						   this.$axios({method:'get',url:store.state.url_data+'/api/regions',params:{type:'street',id:this.qy_id},headers:{'Authorization':'Bearer '+localStorage.token}}
+						     ).then(res=>{
+						  		console.log(res.data,'街道数据')
+						       if(res.data.code==200){
+								   let id = ''
+								   for(var i in this.region_box){
+									   if(this.region_box[i].region_id==this.qy_id){
+										   id=this.region_box[i]
+									   }
+								   }
+								   if(id.street==-1){
+								   	  this.jd_box = res.data.data;
+								   }else{
+									  let street_box = '';
+									  for(var j in this.region_box){
+										 if(this.region_box[j].region_id==this.qy_id){
+											 street_box = this.region_box[j].street;
+										 }
+									  };
+									 this.jd_box = []
+									 for(var j in street_box){
+									   for (var i in res.data.data){
+								   	  	 if(street_box[j].street_id==res.data.data[i].street_id){
+								   	  		this.jd_box.push(res.data.data[i]);
+								   	  	 }
+								   	   };
+									 }
+								   }
+								   // this.jd_val = this.jd_box[0].street_name;
+								   // this.jd_id = this.jd_box[0].street_id;
+								   // this.git_act(1)
+						  		}
+						     }).catch(error=> {});
+						},
+						//当街道选项被点击
+						jd_click(i){
+							this.jd_id = i;
+							this.git_act(1)
+						},
+		
+	   //分页相关函数
+	   handleSizeChange(val) {
+        console.log(`每页 ${val} 条`);
+      },
+      handleCurrentChange(val) {
+		this.git_act(val);
+      },
+	  lx_cl(i){
+			this.git_act(1)
+	  },
+	  
+	//获取列表数据函数
+	  git_act(pages){
+		  this.loading = true;
+	  		this.$axios({method:'get',url:store.state.url_data+'/api/diningOrders',
+			  params:{
+				page:pages,
+				city_id:this.cs_id,
+				region_id:this.qy_id,
+				street_id:this.jd_id,
+				search:this.masg_val,
+				moth:this.date_val,
+				order_period:this.lx_val=='月度用餐'?1:(this.lx_val=='学期用餐'?2:0),
+			  },headers:{'Authorization':'Bearer '+localStorage.token}}).then(res=>{
+	  		        console.log(res.data,'数据');
+					this.loading = false;
+	  		       if(res.data.code==200){
+					   this.tableData3 = res.data.data;
+					   this.total_01 = res.data.meta.total;
+	  			   }
+	  		  }).catch(error=>{
+				  this.loading = false;
+				  if (error.response) {
+				     console.log(error.response);
+				     if(error.response.status==403){
+				  		this.$notify({ title: '警告', message: '账号异常请重新登录',type: 'warning'});this.$router.push('/login');
+				  	 }else{this.$message({message:'发生了错误，请联系技术中心！',type:'warning'})}
+				   }
+			  });
+	  },
+	 
+	 },
+	  mounted(){
+		this.cs_fn();
+		this.git_act(1);
+	  }
+	};
+	
+</script>
+<style scoped="scoped">
+	
+	.tds{
+		text-align: center;
+	}
+	.tab_c{
+		float:left;margin-right:10px;
+	}
+	.inp_a{
+		width: 200px;
+		float: left;
+		margin-right: 10px;
+	}
+</style>
