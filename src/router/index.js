@@ -63,7 +63,7 @@ var constantRoutess = [
           component: () => import('@/views/dashboard/admin/index'),
           name: 'Dashboard',
           meta: { title: 'Dashboard', icon: 'dashboard', affix: true }
-        }
+        },
       ]
     },
     
